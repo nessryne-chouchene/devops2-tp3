@@ -74,6 +74,7 @@ services:
     image: tp3/frontend:latest
     restart: unless-stopped
     environment:
+      STRAPI_CLIENT_PASSWORD: ${STRAPI_CLIENT_PASSWORD}
       # Appel serveur à serveur : on utilise le nom du service, pas "localhost"
       STRAPI_URL: http://strapi:1337
     ports:
