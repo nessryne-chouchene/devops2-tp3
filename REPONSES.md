@@ -56,22 +56,32 @@
 
 ## Partie 6 — SonarQube
 
-**Q18.** Collez votre `sonar-project.properties` complété et expliquez chaque valeur ajoutée. Pourquoi exclut-on `app/**` et `lib/api.ts` du calcul de couverture ?
+**Q18.** Fichier `sonar-project.properties` complété :
 
-**Q19.** Analyse avec le Quality Gate TP3 : statut du gate et conditions en échec ; nombre de bugs, vulnérabilités, security hotspots et code smells ; couverture ; taux de duplication.
+(colle ici le contenu de ton fichier)
 
-**Q20.** Expliquez la différence entre bug, vulnérabilité, security hotspot et code smell, avec un exemple tiré de votre rapport quand il en existe.
+- `sonar.projectKey=tp3-cours` : identifiant unique du projet dans SonarQube.
+- `sonar.sources=app,components,lib` : dossiers du code applicatif à analyser.
+- `sonar.tests=tests` : dossier des tests, analysés à part du code de production.
+- `sonar.javascript.lcov.reportPaths=coverage/lcov.info` : rapport de couverture produit par Vitest, que SonarQube lit pour afficher la couverture.
 
-**Q21.** Ouvrez la vulnérabilité : quelle règle est en cause et quel est le risque ? Expliquez la correction fournie : d'où vient maintenant le mot de passe, et par quel chemin arrive-t-il jusqu'au code ? Pourquoi un secret dans le code est-il dangereux, même dans un dépôt privé ?
+On exclut `app/**` et `lib/api.ts` du calcul de couverture, car ils ne sont pas testés par les tests unitaires et de composant (ceux qui produisent le rapport lcov) : `api.ts` est testé par les tests d'intégration, et les pages `app/**` par les tests de bout en bout. Les inclure ferait afficher une couverture de 0 % pour du code en réalité testé à un autre niveau, ce qui fausserait le Quality Gate.
 
-**Q22.** Quels code smells la correction fournie de `CoursList.tsx` fait-elle disparaître ? Pour chacun : règle, sévérité, explication, et ce qui, dans le nouveau code, règle le problème.
+**Q19.** Analyse du code d'origine avec le Quality Gate TP3 : le statut est **Failed**. La condition en échec est « Vulnerabilities is greater than 0 » sur le code global (1 vulnérabilité). La condition de couverture (moins de 90 %) est respectée avec 97,8 %. Résultats : 0 bug, 1 vulnérabilité, aucun security hotspot, 14 code smells, couverture de 97,8 %, duplication de 5,6 %, pour 778 lignes de code.
 
-**Q23.** Où se trouve le code dupliqué ? Comment le supprimer ? (Ne le faites pas, décrivez seulement.)
+**Q20.** Un **bug** est une erreur de code qui provoque ou peut provoquer un comportement incorrect à l'exécution (ici : aucun, la note de fiabilité est A). Une **vulnérabilité** est une faille de sécurité qu'un attaquant peut exploiter : dans mon rapport, c'est le mot de passe écrit en dur dans `lib/api.ts`. Un **security hotspot** est un code sensible pour la sécurité qui demande une revue humaine pour décider s'il y a un risque réel (aucun dans mon rapport). Un **code smell** est un problème de maintenabilité qui n'empêche pas le code de fonctionner mais le rend plus difficile à lire ou à modifier : dans mon rapport, par exemple, les imports inutilisés et les `if` imbriqués dans `CoursList.tsx`.
 
-**Q24.** Qu'est-ce que la dette technique dans SonarQube et comment est-elle exprimée ? Valeur avant et après vos corrections.
+**Q21.** La vulnérabilité est signalée par la règle de SonarQube sur les **identifiants et mots de passe écrits en dur** (« Hard-coded credentials », sévérité *major*) : le mot de passe `Tp3-Cours-2026!` était une constante dans `frontend/lib/api.ts`. Le risque est que toute personne qui lit le code source, le dépôt Git ou l'image Docker obtient le secret. Dans la correction fournie, le mot de passe vient de l'environnement : il est défini dans `.env` (non commité), le `docker-compose.yml` le transmet au conteneur `frontend` avec `STRAPI_CLIENT_PASSWORD: ${STRAPI_CLIENT_PASSWORD}`, et le code le lit avec `process.env.STRAPI_CLIENT_PASSWORD`. Un secret dans le code est dangereux même dans un dépôt privé : il est accessible à tous ceux qui ont accès au dépôt, il reste dans l'historique Git même après suppression, il se retrouve dans les images et les sauvegardes, et on ne peut pas le changer sans modifier et redéployer le code. Un dépôt privé peut aussi devenir public ou être divulgué.
 
-**Q25.** Que signifie « New Code » dans SonarQube ? Quelles conditions du gate TP3 portent sur le nouveau code ? Pourquoi SonarQube recommande-t-il de juger le nouveau code plutôt que le code global ?
+**Q22.** La correction de `CoursList.tsx` supprime des problèmes de maintenabilité de sévérité mineure :
+- **Imports inutilisés** (règle « Unused imports should be removed », *minor*) : `useEffect` et `sortBySession` étaient importés sans être utilisés. Le nouvel en-tête ne conserve que ce qui sert.
+- **`if` seul dans un `else`** (règle « 'If' statement should not be the only statement in 'else' block », *minor*) : l'ancienne fonction `describeResults` imbriquait des `else { if (...) }`, ce qui rendait la logique difficile à lire. Le nouveau code sépare la logique en deux petites fonctions (`describeEmpty` et `describeResults`), avec des retours anticipés et des expressions conditionnelles : il n'y a plus d'imbrication de `else`.
+Au total, le nombre de code smells passe de 14 à 9.
 
+**Q23.** Le code dupliqué (5,7 % des lignes) se trouve, d'après le code, entre `components/CoursCard.tsx` et la page `app/cours/[documentId]/page.tsx` : les deux contiennent le même bloc `<dl className="cours-meta">` (séance, durée, niveau) et la même liste de mots-clés. Pour le supprimer, on extrairait un composant partagé, par exemple `CoursMeta`, qui affiche les métadonnées et les mots-clés, et on l'utiliserait dans les deux fichiers.
+
+**Q24.** La dette technique est le temps estimé nécessaire pour corriger tous les problèmes de maintenabilité (code smells) du projet. SonarQube l'exprime en durée (minutes, heures, jours ; un jour vaut 8 heures), en additionnant l'effort de remédiation de chaque issue (par exemple « 5 min effort » pour chaque problème de props). Valeur avant les corrections : **… (à compléter)** pour 14 code smells. Valeur après : **… (à compléter)** pour 9 code smells.
+**Q25.** Le « New Code » est le code ajouté ou modifié depuis un point de référence (par exemple la version précédente ou les N derniers jours). Les conditions du gate TP3 qui portent sur le nouveau code sont : *Security Hotspots Reviewed* inférieur à 100 %, *Coverage* inférieure à 80 % et *Duplicated Lines* supérieur à 3 % (conditions ajoutées d'office par SonarQube). SonarQube recommande de juger le nouveau code plutôt que le code global car on ne peut pas corriger tout l'héritage d'un coup : on s'assure que chaque nouvelle modification est propre (principe « Clean as You Code »), ce qui empêche la dette d'augmenter et garde le gate réaliste et actionnable.
 **Q26.** Avec `sonar.qualitygate.wait=true`, que fait le scanner quand le Quality Gate est rouge ? Pourquoi est-ce utile dans un pipeline CI ?
 
 ## Partie 7 — Synthèse
