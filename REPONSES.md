@@ -52,7 +52,7 @@
 | Unitaire + composant | 19 | 17,5 s (dont environ 60 % de démarrage de l'environnement jsdom) | Non |
 | Intégration | 4 | 2,9 s | Oui (Strapi et PostgreSQL) |
 | E2E | 4 | 12,5 s | Oui (stack complète, avec frontend) |
-**Q17.** Qu'est-ce qu'un test « flaky » (instable) ? Quels mécanismes de Playwright utilisés ici (attente automatique, assertions `expect(...).toHaveCount`, etc.) réduisent ce risque ?
+**Q17.** Un test « flaky » (instable) est un test qui réussit ou échoue de façon aléatoire sans que le code change, à cause de délais, du réseau, de l'ordre d'exécution ou de données partagées. Playwright réduit ce risque : l'attente automatique (`click`, `fill` attendent que l'élément soit prêt) ; les assertions qui se réessaient jusqu'au délai (`expect(...).toHaveCount`, `toHaveText`, `toBeVisible`) ; les sélecteurs par rôle, plus stables (`getByRole`) ; un contexte de navigateur neuf pour chaque test. Ici `retries: 0` est configuré : un échec n'est pas masqué par une relance automatique.
 
 ## Partie 6 — SonarQube
 
